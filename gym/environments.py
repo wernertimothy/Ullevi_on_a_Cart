@@ -4,7 +4,9 @@ from typing import Callable
 import numpy as np
 # visualization
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+import matplotlib.animation as animation
+from matplotlib import patches
+
 
 
 class CartPoleSystem:
@@ -12,7 +14,7 @@ class CartPoleSystem:
 
         # === system dynamic realted properties ===
         self._parameter = np.array([
-            0.8,      # lp: length of the pole
+            0.6,      # lp: length of the pole
             0.1,      # mp: mass of the pole
             0.01,      # Jp: moment of interia of the pole
             0.5,      # mc: mass of the cart
@@ -39,8 +41,22 @@ class CartPoleSystem:
         self._CART_HIGHT = 0.1
         self._CART_WIDTH = 0.3
 
-        self._CART_COLOR = 'k'
+        self._CART_COLOR = np.array([245, 103, 196])/255
+        self._POLE_COLOR = np.array([37, 194, 51])/255
 
+    @property
+    def nx(self):
+        '''
+        state dimension.
+        '''
+        return self._nx
+
+    @property
+    def nu(self):
+        '''
+        input dimension.
+        '''
+        return self._nu
 
     @property
     def samplerate(self):
@@ -65,7 +81,7 @@ class CartPoleSystem:
             ds,
             dphi,
             u,
-            tmp*g*np.sin(phi) + tmp*np.cos(phi)*u
+            tmp*g*np.sin(phi) + - 0.4*dphi + tmp*np.cos(phi)*u
         ])
 
     def _step(self, f: Callable, x: np.ndarray, u: float) -> np.ndarray:
@@ -92,27 +108,49 @@ class CartPoleSystem:
         '''
         return self._state
 
-    def draw(self, figure_number : int):
-        plt.figure(figure_number)
-        plt.clf()
-
-        # draw line
-        plt.hlines(0,-1,1,'k')
-        
-        s, phi, ds, dphi = self._state
+    def _animate_system(self, i, X:np.ndarray):
+        '''
+        Defines a frame in the animation.
+        '''
+        # get states
+        s, phi, _, _ = X[:,i]
+        # get parameter
         lp, _, _, _, _ = self._parameter
 
         # draw cart
-        plt.gca().add_patch(Rectangle((s-self._CART_WIDTH/2,0-self._CART_HIGHT/2),self._CART_WIDTH,self._CART_HIGHT,color=self._CART_COLOR))
-
+        self._cart_patch.set_xy([s-self._CART_WIDTH/2, 0-self._CART_HIGHT/2])
         # draw pole
         x_pole = (s, s - np.sin(phi)*lp)
         y_pole = (0, np.cos(phi)*lp)
-        plt.plot(x_pole,y_pole,color = 'C1', linewidth=3)
+        self._pole_patch.set_data(x_pole, y_pole)
 
-        plt.gca().set_xlim([-1,1])
-        plt.gca().set_ylim([-1,1])
+        return self._fig_geoms
 
-        # plt.axis('equal')
-        plt.pause(0.01)
+    def visualize(self, state_trjectory : np.ndarray):
+        '''
+        Visualizes a given state trajectory.
+        '''
+        # set figure
+        fig = plt.figure()
+        ax = fig.add_subplot(111, autoscale_on=False, xlim=(-1, 1), ylim=(-1, 1))
+        ax.set_aspect('equal')
+        # ax.grid()
+        ax.set_xlabel('X [m]')
+        ax.set_ylabel('Y [m]')
+
+        # define geometries
+        self._fig_geoms = []
+        self._cart_patch = patches.Rectangle((0, 0), 0.3, 0.1, color=self._CART_COLOR)
+        self._pole_patch, = ax.plot([], [], 'o-', lw=4, color=self._POLE_COLOR)
+        self._fig_geoms.append(self._cart_patch)
+        self._fig_geoms.append(self._pole_patch)
+
+        # initialize plot
+        ax.hlines(0,-1,1,'k',zorder=1) # zorder=1 makes it background
+        ax.add_patch(self._cart_patch)
+        ax.add_patch(self._pole_patch)
+        
+        # generate animation
+        ani = animation.FuncAnimation(fig, self._animate_system, len(state_trjectory[0,:]), fargs=(state_trjectory,), interval=1, repeat=False)
+        plt.show()
 
