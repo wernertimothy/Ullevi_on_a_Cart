@@ -175,7 +175,7 @@ class CartPoleSystem:
 
         # define geometries
         self._fig_geoms = []
-        self._cart_patch = patches.Rectangle((0, 0), 0.3, 0.1, color=self._CART_COLOR)
+        self._cart_patch = patches.Rectangle((0, 0), self._CART_WIDTH, self._CART_HIGHT, color=self._CART_COLOR)
         self._pole_patch, = ax.plot([], [], 'o-', lw=4, color=self._POLE_COLOR)
         self._fig_geoms.append(self._cart_patch)
         self._fig_geoms.append(self._pole_patch)
