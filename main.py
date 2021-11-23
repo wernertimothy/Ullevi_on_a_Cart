@@ -5,10 +5,17 @@ import numpy as np
 from gym import environments
 
 # initialize cart pole system from gym
-x0 = np.array([0,np.pi/4,0,0]) # initial state
-Ts = 0.05                # sampletime
+x0 = np.array([0,3*np.pi/4,0,0]) # initial state
+Ts = 0.05                        # sampletime
 
-cart_pole = environments.CartPoleSystem(x0)
+'''
+use 'full' for the full dynamics with force input on the cart
+use 'simplified' for ideal velocity control on the cart and input is the cart acceleration
+'''
+
+equations = 'full'
+# equations = 'simplified'
+cart_pole = environments.CartPoleSystem(x0, equations=equations)
 cart_pole.samplerate = Ts
 
 # define simulation time
@@ -20,6 +27,7 @@ time = np.arange(t0, tf+Ts, Ts)
 X_sim = np.zeros((cart_pole.nx, len(time)))
 U_sim = np.zeros(len(time))
 
+# actual simulation
 for k, t in enumerate(time):
     # measure current state
     xt = cart_pole.measure()
@@ -31,4 +39,5 @@ for k, t in enumerate(time):
     X_sim[:,k] = xt
     U_sim[k] = ut
 
-cart_pole.visualize(X_sim)
+# visulization
+cart_pole.visualize(X_sim, repeat=False)
